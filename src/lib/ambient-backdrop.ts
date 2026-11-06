@@ -1,38 +1,45 @@
-const SAMPLE_WIDTH = 32;
-const SAMPLE_HEIGHT = 18;
-const FRAME_INTERVAL_MS = 80;
+const FIELD_WIDTH = 16;
+const FIELD_HEIGHT = 9;
+const SMOOTH_WIDTH = 64;
+const SMOOTH_HEIGHT = 36;
+const SAMPLE_INTERVAL_MS = 200;
+const BLEND = 0.35;
 
-// Paints a tiny copy of the playing video into a canvas. CSS stretches and blurs the canvas
-// behind the page, so the background takes the video's colors without a second decoder.
+// Averages the playing video into a tiny color field and paints it, smoothly upscaled, into the
+// canvas. The browser stretches that canvas over the page, which is the whole blur: no CSS
+// filter, no oversized layer and no second video decoder.
 export function startAmbientBackdrop(
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
 ): () => void {
+  const field = document.createElement("canvas");
+  const fieldContext = field.getContext("2d");
   const context = canvas.getContext("2d");
-  if (context === null) {
+  if (fieldContext === null || context === null) {
     throw new Error("A 2D canvas is needed for the ambient backdrop.");
   }
 
-  canvas.width = SAMPLE_WIDTH;
-  canvas.height = SAMPLE_HEIGHT;
+  field.width = FIELD_WIDTH;
+  field.height = FIELD_HEIGHT;
+  canvas.width = SMOOTH_WIDTH;
+  canvas.height = SMOOTH_HEIGHT;
+  fieldContext.imageSmoothingQuality = "high";
+  context.imageSmoothingQuality = "high";
 
   let hasDrawn = false;
-  let lastDrawAt = 0;
-  let frameRequest = 0;
 
-  const onFrame = (now: number) => {
-    frameRequest = requestAnimationFrame(onFrame);
-    if (now - lastDrawAt < FRAME_INTERVAL_MS) return;
-
-    const hasPicture = video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+  const sample = () => {
+    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
     // Paint once for the first picture, then only while the video plays.
-    if (!hasPicture || (hasDrawn && video.paused)) return;
+    if (hasDrawn && video.paused) return;
 
-    context.drawImage(video, 0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT);
+    fieldContext.drawImage(video, 0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    // Blend each sample over the previous one so the colors glide instead of stepping.
+    context.globalAlpha = hasDrawn ? BLEND : 1;
+    context.drawImage(field, 0, 0, SMOOTH_WIDTH, SMOOTH_HEIGHT);
     hasDrawn = true;
-    lastDrawAt = now;
   };
 
-  frameRequest = requestAnimationFrame(onFrame);
-  return () => cancelAnimationFrame(frameRequest);
+  const timer = window.setInterval(sample, SAMPLE_INTERVAL_MS);
+  return () => window.clearInterval(timer);
 }

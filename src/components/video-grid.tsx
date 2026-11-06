@@ -82,11 +82,10 @@ export default function VideoGrid({ sources }: VideoGridProps) {
 
   return (
     <>
-      {/* Oversized so the blur does not fade out at the page edges. */}
       <canvas
         ref={ambientRef}
         aria-hidden="true"
-        className="pointer-events-none invisible fixed -top-[30%] -left-[30%] -z-10 size-[160%] blur-[9vmax]"
+        className="pointer-events-none invisible fixed inset-0 -z-10 size-full"
       />
       <div ref={stageRef} className="invisible relative h-full">
         <div
