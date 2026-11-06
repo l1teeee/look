@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #fdfbfe;
+  --color-foreground: #111111;
+  --font-sans: var(--font-inter-tight), Arial, sans-serif;
+
+  --spacing-frame-x: max(1rem, 5vw);
+  --spacing-frame-y: max(1rem, 5svh);
+  --spacing-gutter: clamp(0.5rem, min(2.7svh, 1.6vw), 1.75rem);
+  --radius-pane: clamp(1rem, min(5.3svh, 7vw), 3.5rem);
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
